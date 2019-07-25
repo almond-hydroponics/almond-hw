@@ -1,2 +1,2 @@
 # almond-hw
-Project almond hardware esp8266 control code for hydroponics
+Project almond hardware esp32 control code for hydroponics
