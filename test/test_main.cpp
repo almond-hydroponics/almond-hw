@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <unity.h>
 
-int LED = 12;
+#define LED 2
 
 // void setUp(void) {
 // // set stuff up here
@@ -33,7 +33,7 @@ void setup() {
 }
 
 uint8_t i = 0;
-uint8_t max_blinks = 5;
+uint8_t max_blinks = 3;
 
 void loop() {
     if (i < max_blinks)
