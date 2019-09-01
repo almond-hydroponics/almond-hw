@@ -1,27 +1,17 @@
-**What does this PR do?**
-
+#### Description
 n/a
 
-**Description of Task to be completed?**
+#### Type of change
+<pre>
++ Added something.
+- Removed something.
+~ Modified something.
+? Found a bug, but didn't fix it.
+! Found a bug AND fixed it, or fixed a previously known bug.
+</pre>
 
+#### How Has This Been Tested?
 n/a
 
-**How should this be manually tested?**
-
-n/a
-
-**Any background context you want to provide?**
-
-n/a
-
-**What are the relevant pivotal tracker stories?**
-
-n/a
-
-**Screenshots (if appropriate)**
-
-n/a
-
-**Questions:**
-
+#### Story ID
 n/a
