@@ -29,6 +29,15 @@ This is a hydroponics farm control system to be used at home with limited space,
 3. `cd` into the root of the **project directory**.
 4. Upload the file from src to the esp32 board by using `platformio run`
 
+### ESP 32 WROOM 32 Datasheet
+[Datasheet Download](https://circuits4you.com/wp-content/uploads/2018/12/esp32-wroom-32_datasheet_en.pdf)
+
+### ESP 32 Pinout
+<br />
+<img width="1440" alt="almond-screenshot" src="https://res.cloudinary.com/almondgreen/image/upload/v1567363431/Almond/ESP32-Pinout_g1xrhm.jpg">
+<br />
+
+
 ## Testing
 
 **Unit tests** - Run `platformio test -e esp32dev -v` on the terminal while within the **project root directory**. Unit testing is achieved through the use of `platformio`.
