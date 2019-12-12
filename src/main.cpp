@@ -13,7 +13,7 @@
 // DEVICE CREDENTIALS
 // Customize this for each ESP Device
 const char *instanceId = "ALMOND01";
-const char *deviceId = "ABCDEFG";
+const char *deviceId = "ABCDEF";
 
 // SERVER DETAILS
 const char *mainServer = "192.168.1.4";
