@@ -25,8 +25,6 @@ String serverPassword = "deviceOrchid123";
 String sessionId = "";
 
 // API PATH VARIABLES
-const char *signInAPI = "/orchid/api/account/login";
-const char *deviceConfigAPI = "/orchid/api/admin/getESPConfig";
 
 // DATA FOR THIS DEVICE ONLY
 int sensorPin5 = 5;
@@ -255,9 +253,7 @@ void wifiOnConnect()
 void loginToWifi()
 {
     WiFi.mode(WIFI_STA);
-    wifiMulti.addAP("zukuhome", "njoki001");
-    wifiMulti.addAP("Konde", "fkonde14#");
-    wifiMulti.addAP("Tech_D3709889", "XEXNKJEX");
+
 
     Serial.println("Connecting Wifi");
     while (wifiMulti.run() != WL_CONNECTED) {

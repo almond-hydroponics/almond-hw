@@ -1,11 +1,20 @@
-[![Build Status](https://travis-ci.org/mashafrancis/almond-hw.svg?branch=develop)](https://travis-ci.org/mashafrancis/almond-hw)
+<div align="center">
 
 # almond-hw
-Project almond hardware esp32 control code for hydroponics
 
-<br />
-<img width="1440" alt="almond-screenshot" src="https://res.cloudinary.com/mashafrancis/image/upload/v1564127451/almond/hydroponics-kitchen.jpg">
-<br />
+[![Build Status](https://travis-ci.org/mashafrancis/almond-hw.svg?branch=develop)](https://travis-ci.org/mashafrancis/almond-hw)
+
+</div>
+
+<div align="center">
+
+    Project almond hardware esp32 control code for hydroponics
+
+  [![Butternut](../public/img/readme.svg)](https://almond.com)
+
+  #### Simple but complicated butternut
+
+</div>
 
 ## Description
 This is a hydroponics farm control system to be used at home with limited space, in greenhouses and indoors as well.
@@ -13,10 +22,10 @@ This is a hydroponics farm control system to be used at home with limited space,
 ### Application Heroku Links
 
 -   Backend (Swagger Documentation):
-    [swagger-documentation](https://kari4me-api.herokuapp.com/)
+    [swagger-documentation](https://almond-re-staging.herokuapp.com/)
 
 -   Frontend (Almond App Hosting):
-    [almond web app](https://kari4me.herokuapp.com/)
+    [almond web app](https://almond-re-staging.herokuapp.com/)
 
 -   Postman collection
     <br />
@@ -29,18 +38,18 @@ This is a hydroponics farm control system to be used at home with limited space,
 3. `cd` into the root of the **project directory**.
 4. Upload the file from src to the esp32 board by using `platformio run`
 
-### ESP 32 WROOM 32 Datasheet
+### ESP 8266 Datasheet
 [Datasheet Download](https://circuits4you.com/wp-content/uploads/2018/12/esp32-wroom-32_datasheet_en.pdf)
 
-### ESP 32 Pinout
+### ESP 8266 Pinout
 <br />
-<img width="1440" alt="almond-screenshot" src="https://res.cloudinary.com/almondgreen/image/upload/v1567363431/Almond/ESP32-Pinout_g1xrhm.jpg">
+<img width="1440" alt="almond-screenshot" src="../public/img/ESP8266_12X.jpg">
 <br />
 
 
 ## Testing
 
-**Unit tests** - Run `platformio test -e esp32dev -v` on the terminal while within the **project root directory**. Unit testing is achieved through the use of `platformio`.
+**Unit tests** - Run `platformio test -e esp8266dev -v` on the terminal while within the **project root directory**. Unit testing is achieved through the use of `platformio`.
 
 ### Support or Contribution
 
