@@ -25,6 +25,8 @@ String serverPassword = "deviceOrchid123";
 String sessionId = "";
 
 // API PATH VARIABLES
+const char *signInAPI = "/orchid/api/account/login";
+const char *deviceConfigAPI = "/orchid/api/admin/getESPConfig";
 
 // DATA FOR THIS DEVICE ONLY
 int sensorPin5 = 5;
@@ -241,7 +243,7 @@ void detectSensorTrigger()
     }
 }
 
-// BOOTUP METHODS
+// BOOT UP METHODS
 void wifiOnConnect()
 {
     digitalWrite(pinConverter(0), HIGH);
@@ -253,7 +255,10 @@ void wifiOnConnect()
 void loginToWifi()
 {
     WiFi.mode(WIFI_STA);
-
+    wifiMulti.addAP("zukuhome", "njoki001");
+    wifiMulti.addAP("Konde", "fkonde14#");
+    wifiMulti.addAP("Tech_D3709889", "XEXNKJEX");
+    wifiMulti.addAP("Masha", "mashafrancis");
 
     Serial.println("Connecting Wifi");
     while (wifiMulti.run() != WL_CONNECTED) {
@@ -280,7 +285,7 @@ template<class T> void loginToServer(T webClient)
     webClient.println("Connection: Keep-Alive");
     webClient.println("Content-Type: application/json");
 
-    String postData = "{\"email\":\"" + serverUserName + "\",\"password\":\"" + serverPassword + "\"}";
+    String postData = R"({"email":")" + serverUserName + R"(","password":")" + serverPassword + "\"}";
 
     webClient.print("Content-Length: ");
     webClient.println(postData.length());
@@ -368,12 +373,12 @@ void loginToMQTT()
 
     Serial.println("Starting - MQTT...");
     while (!mqttClient.connected()) {
-        Serial.println("Connecting to MQTT... :" + mqttClient.state());
+        Serial.println(&"Connecting to MQTT... :" [ mqttClient.state()]);
         if (mqttClient.connect(deviceId,mqttUser,mqttPassword)) {
             Serial.println("Connected as :" + String(deviceId));
         }
         else {
-            Serial.println("Failed with state :" + mqttClient.state());
+            Serial.println(&"Failed with state :" [ mqttClient.state()]);
             delay(1000);
         }
 
