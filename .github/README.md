@@ -49,7 +49,7 @@ This is a hydroponics farm control system to be used at home with limited space,
 
 ## Testing
 
-**Unit tests** - Run `platformio test -e esp8266dev -v` on the terminal while within the **project root directory**. Unit testing is achieved through the use of `platformio`.
+**Unit tests** - Run `platformio test -e nodemcuv2 -v` on the terminal while within the **project root directory**. Unit testing is achieved through the use of `platformio`.
 
 ### Support or Contribution
 
