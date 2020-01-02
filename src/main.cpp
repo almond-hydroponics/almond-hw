@@ -58,7 +58,8 @@ long previousMillis = 0;
 unsigned long postInterval = 10000;
 
 // UTILITY METHODS
-String encodeCredentials() {
+String encodeCredentials()
+{
 	String cred = String(deviceId) + ":" + String(instanceId);
 	Serial.println(cred);
 	char inputString[cred.length()];
@@ -72,7 +73,8 @@ String encodeCredentials() {
 	return encodedString;
 }
 
-String decodeCredentials(String cred) {
+String decodeCredentials(String cred)
+{
 	char inputString[cred.length() + 1];
 	cred.toCharArray(inputString, cred.length() + 1);
 	int inputStringLength = sizeof(inputString);
@@ -83,7 +85,8 @@ String decodeCredentials(String cred) {
 	return decodedString;
 }
 
-int pinConverter(int boardPin) {
+int pinConverter(int boardPin)
+{
 	if (boardPin == 0)
 		return 16;
 	if (boardPin == 1)
@@ -105,7 +108,8 @@ int pinConverter(int boardPin) {
 }
 
 // RESTORE SETTINGS TO PINS
-void restoreSettingsToPins() {
+void restoreSettingsToPins()
+{
 	for (int pinDex = 1; pinDex <= 4; pinDex++) {
 		int pinValue = (int)EEPROM.read(pinDex);
 		if (pinValue == 1 || pinValue == 0) {
@@ -126,12 +130,13 @@ void restoreSettingsToPins() {
 }
 
 // RELAY METHODS
-void processMsgForRelay(String relayMessage) {
+void processMsgForRelay(String relayMessage)
+{
 	relayMessage.replace(relayPrefix, "");
 
 	String pinNoStr = relayMessage.substring(0, relayMessage.indexOf("="));
 	String pinValueStr = relayMessage.substring(relayMessage.indexOf("=") + 1,
-	                                            relayMessage.length());
+												relayMessage.length());
 
 	int pinNo = pinConverter(pinNoStr.toInt());
 	int pinValue = pinValueStr.toInt() <= 0 ? HIGH : LOW;
@@ -143,11 +148,12 @@ void processMsgForRelay(String relayMessage) {
 }
 
 // SENSOR METHODS
-void processMsgForSensor(String sensorMessage) {
+void processMsgForSensor(String sensorMessage)
+{
 	sensorMessage.replace(sensorPrefix, "");
 
 	String sensorNoStr = sensorMessage.substring(0,
-	                                             sensorMessage.indexOf("="));
+												 sensorMessage.indexOf("="));
 	String sensorStatusStr = sensorMessage.substring(
 		sensorMessage.indexOf("=") + 1, sensorMessage.length());
 
@@ -169,7 +175,8 @@ void processMsgForSensor(String sensorMessage) {
 }
 
 // MQTT METHODS
-void processMQTTMessage(String message) {
+void processMQTTMessage(String message)
+{
 	Serial.println("MESSAGE:" + message);
 
 	bool msgIdentified = false;
@@ -184,7 +191,8 @@ void processMQTTMessage(String message) {
 
 }
 
-void mqttCallback(char *topic, byte *payload, unsigned int payloadLength) {
+void mqttCallback(char *topic, byte *payload, unsigned int payloadLength)
+{
 	// PROCESS MQTT MESSAGE
 	Serial.println("TOPIC: " + String(topic));
 	String mqttResponse = "";
@@ -197,20 +205,23 @@ void mqttCallback(char *topic, byte *payload, unsigned int payloadLength) {
 	if ((char)payload[0] == '1') {
 		digitalWrite(pinConverter(1), HIGH);
 		Serial.println("PUMP ON");
-	} else {
+	}
+	else {
 		digitalWrite(pinConverter(1), LOW);
 		Serial.println("PUMP OFF");
 	}
 }
 
-void publishToMQTT(const String& message) {
+void publishToMQTT(const String &message)
+{
 	const char *messagePointer = message.c_str();
 	const char *mqttCommonChannel = ESPConfigResponse[4].c_str();
 	mqttClient.publish(mqttCommonChannel, messagePointer);
 }
 
 // DETECT INPUT/OUTPUT METHODS
-void publishSensorValue(int sensorPin, int sensorValue) {
+void publishSensorValue(int sensorPin, int sensorValue)
+{
 	String msgType = "LOG";
 	String dataToPost =
 		msgType + "|" +
@@ -223,7 +234,8 @@ void publishSensorValue(int sensorPin, int sensorValue) {
 	publishToMQTT(dataToPost);
 }
 
-void detectSensorTrigger() {
+void detectSensorTrigger()
+{
 	// READ D5 VALUE
 	int pin1Value = digitalRead(pinConverter(sensorPin5));
 	if (pin1Value != lastSensorPin5Value && sensorPin5enabled) {
@@ -251,14 +263,16 @@ void detectSensorTrigger() {
 }
 
 // BOOT UP METHODS
-void wifiOnConnect() {
+void wifiOnConnect()
+{
 	digitalWrite(pinConverter(0), HIGH);
 	delay(1000);
 	digitalWrite(pinConverter(0), LOW);
 	delay(1000);
 }
 
-void loginToWifi() {
+void loginToWifi()
+{
 	WiFi.mode(WIFI_STA);
 	wifiMulti.addAP(CONFIG.wlan.ssid, CONFIG.wlan.password);
 //	wifiMulti.addAP("Konde", "fkonde14#");
@@ -277,7 +291,8 @@ void loginToWifi() {
 }
 
 template<class T>
-void loginToServer(T webClient) {
+void loginToServer(T webClient)
+{
 	sessionId = "";
 	if (!webClient.connect(mainServer, mainServerPort)) {
 		Serial.println("Connection failed");
@@ -299,13 +314,14 @@ void loginToServer(T webClient) {
 
 	String response = webClient.readString();
 	sessionId = response.substring(response.indexOf("SESSIONID="),
-	                               response.length());
+								   response.length());
 	sessionId = sessionId.substring(0, sessionId.indexOf(";"));
 	Serial.println(sessionId);
 }
 
 template<typename Client>
-void fetchESPConfiguration(Client &webClient) {
+void fetchESPConfiguration(Client &webClient)
+{
 	if (sessionId.length() == 0) {
 		Serial.println("Device has to login to get cookie");
 		return;
@@ -362,7 +378,8 @@ void fetchESPConfiguration(Client &webClient) {
 	webClient.stop();
 }
 
-void loginToMQTT() {
+void loginToMQTT()
+{
 	// const char* mqttServer = ESPConfigResponse[0].c_str();
 	// int mqttPort = ESPConfigResponse[1].toInt();
 	// const char* mqttUser = ESPConfigResponse[2].c_str();
@@ -381,7 +398,8 @@ void loginToMQTT() {
 		Serial.println(&"Connecting to MQTT... :"[mqttClient.state()]);
 		if (mqttClient.connect(deviceId, mqttUser, mqttPassword)) {
 			Serial.println("Connected as :" + String(deviceId));
-		} else {
+		}
+		else {
 			Serial.println(&"Failed with state :"[mqttClient.state()]);
 			delay(1000);
 		}
@@ -389,7 +407,8 @@ void loginToMQTT() {
 	}
 }
 
-void subscribeToMQTT() {
+void subscribeToMQTT()
+{
 	// const char* thisDeviceChannel = ESPConfigResponse[5].c_str();
 	const char *thisDeviceChannel = "almond/pumpSchedule";
 	mqttClient.subscribe(thisDeviceChannel);
@@ -397,7 +416,8 @@ void subscribeToMQTT() {
 	Serial.println("Subscribed to channel: ");
 }
 
-boolean reconnect() {
+boolean reconnect()
+{
 	if (mqttClient.connect("arduinoClient")) {
 		// Once connected, publish an announcement...
 		mqttClient.publish("outTopic", "hello world");
@@ -432,7 +452,8 @@ boolean reconnect() {
 //   }
 // }
 
-void setupPinModes() {
+void setupPinModes()
+{
 	pinMode(pinConverter(0), OUTPUT);
 	pinMode(pinConverter(1), OUTPUT);
 	pinMode(pinConverter(2), OUTPUT);
@@ -445,7 +466,8 @@ void setupPinModes() {
 	pinMode(pinConverter(8), INPUT_PULLDOWN_16);
 }
 
-void setup() {
+void setup()
+{
 	// SETUP ESP8266 DEVICE
 	Serial.begin(115200);
 	Serial.println();
@@ -484,7 +506,8 @@ void setup() {
 	lastReconnectAttempt = 0;
 }
 
-void sendHeartBeatOnInterval() {
+void sendHeartBeatOnInterval()
+{
 	unsigned long currentMillis = millis();
 	if (currentMillis - previousMillis > postInterval) {
 		previousMillis = currentMillis;
@@ -493,7 +516,8 @@ void sendHeartBeatOnInterval() {
 	}
 }
 
-void loop() {
+void loop()
+{
 	if (!mqttClient.connected()) {
 		long now = millis();
 		if (now - lastReconnectAttempt > 5000) {
@@ -503,7 +527,8 @@ void loop() {
 				lastReconnectAttempt = 0;
 			}
 		}
-	} else {
+	}
+	else {
 		// Client connected
 
 		mqttClient.loop();
