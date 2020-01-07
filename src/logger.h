@@ -7,49 +7,51 @@
 
 typedef void (*LoggerFatalHook)(const char *error_line);
 
-class Logger {
+class Logger
+{
 public:
-  enum class Status { BOOTING, RUNNING, ERROR };
-  enum class Level { DEBUG, INFO, WARNING, FATAL };
+	enum class Status { BOOTING, RUNNING, ERROR };
+	enum class Level { DEBUG, INFO, WARNING, ERROR, FATAL };
 
-  static const int max_lines = 16;
-  static const int max_line_len = 80;
+	static const int max_lines = 16;
+	static const int max_line_len = 80;
 
-  Logger();
+	Logger();
 
-  void setup_serial(const char *hostname, int serial_baudrate = 115200);
-  void setup_led(int led_pin_);
-  void setup_fatal_hook(LoggerFatalHook hook);
+	void setup_serial(const char *hostname, int baudrate = 115200);
+	void setup_led(int led_pin_);
+	void setup_fatal_hook(LoggerFatalHook hook);
 
-  Logger::Status get_status();
-  void set_status(Logger::Status status);
+	Logger::Status get_status();
+	void set_status(Logger::Status status);
 
-  void log(Logger::Level level, const __FlashStringHelper *format, ...);
+	void log(Logger::Level level, const __FlashStringHelper *format, ...);
 
-  /// @returns pointer to the given line or NULL if not that many lines
-  const char *get_log_line(int line_number);
+	/// @returns pointer to the given line or NULL if not that many lines
+	const char * get_log_line(int line_number);
 
-  void loop();
+	void loop();
 
 private:
-  TimerOverride led_timer;
-  LoggerFatalHook fatal_hook;
-  int line_loop;
-  int serial_baudrate;
-  int led_pin;
-  bool led_state;
-  Logger::Status status;
-  char buffer[max_lines * max_line_len];
-  char format[max_line_len];
+	TimerOverride led_timer;
+	LoggerFatalHook fatal_hook;
+	int line_loop;
+	int serial_baudrate;
+	int led_pin;
+	bool led_state;
+	Logger::Status status;
+	char buffer[max_lines * max_line_len];
+	char format[max_line_len];
 };
 
-struct InfoUpTime {
-  unsigned int hours;
-  unsigned int minutes;
-  unsigned int seconds;
+struct InfoUptime
+{
+	unsigned int hours;
+	unsigned int minutes;
+	unsigned int seconds;
 };
 
-void get_uptime(InfoUpTime *uptime);
+void get_uptime(InfoUptime *uptime);
 
 extern Logger LOG;
 

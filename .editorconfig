@@ -46,7 +46,3 @@ indent_size = 3
 [{CMakeLists.txt,*.cmake}]
 indent_style = space
 indent_size = 2
-
-# Makefile
-[Makefile]
-indent_style = tab

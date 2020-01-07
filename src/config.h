@@ -5,14 +5,16 @@
 #include <type_traits>
 
 template<typename E>
-constexpr auto to_integral(E e) -> typename std::underlying_type<E>::type {
+constexpr auto to_integral(E e) -> typename std::underlying_type<E>::type
+{
 	return static_cast<typename std::underlying_type<E>::type>(e);
 }
 
 // User configurations are provided as structs so that it will be easier to
 // change and to read.
 
-struct Config_email {
+struct Config_email
+{
 	const char *server_host;
 	int server_port;
 	const char *login;
@@ -20,37 +22,43 @@ struct Config_email {
 	const char *receiver;
 };
 
-struct Config_wlan {
+struct Config_wlan
+{
 	const char *ssid;
 	const char *password;
 };
 
-struct Config_run_table_time {
+struct Config_run_table_time
+{
 	uint8_t hour;
 	uint8_t minute;
 	uint8_t second;
 };
 
-struct Config_run_table {
+struct Config_run_table
+{
 	Config_run_table_time active_start;
 	Config_run_table_time active_stop;
 	Config_run_table_time period_on;
 	Config_run_table_time period_off;
 };
 
-struct Config_pump {
+struct Config_pump
+{
 	uint16_t low_level_height_mm;
 	uint8_t threshold_water_up_s;
 };
 
-struct Config_mqtt {
+struct Config_mqtt
+{
 	const char *mqtt_server;
 	int mqtt_port;
 	const char *mqtt_user;
 	const char *mqtt_password;
 };
 
-struct Config {
+struct Config
+{
 	Config_email email;
 	Config_wlan wlan;
 	Config_run_table runtable;
