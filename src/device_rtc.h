@@ -11,9 +11,9 @@
 class Device_rtc: public Device_input
 {
 public:
-	Device_rtc(const char *name);
-	virtual void loop() override;
-	virtual void setup() override;
+	explicit Device_rtc(const char *name);
+	void loop() override;
+	void setup() override;
 	void update_time(uint32_t ntp_time);
 	void time_of_day(Config_run_table_time *time);
 
