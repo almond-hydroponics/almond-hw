@@ -14,7 +14,7 @@ public:
 	explicit Device_rtc(const char *name);
 	void loop() override;
 	void setup() override;
-	void update_time(uint32_t ntp_time);
+	static void update_time(uint32_t ntp_time);
 	void time_of_day(Config_run_table_time *time);
 
 protected:

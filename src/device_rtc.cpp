@@ -22,7 +22,7 @@ void Device_rtc::setup()
 		LOG_INFO("RTC lost power, lets set the time!");
 
 		// following line sets the RTC to the date & time this sketch was compiled
-		rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+		RTC_DS3231::adjust(DateTime(F(__DATE__), F(__TIME__)));
 		// This line sets the RTC with an explicit date & time, for example to set
 		// January 21, 2014 at 3am you would call:
 		// rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
@@ -44,12 +44,12 @@ void Device_rtc::time_of_day(Config_run_table_time *time)
 
 void Device_rtc::update_time(uint32_t ntp_time)
 {
-	rtc.adjust(DateTime(ntp_time));
+	RTC_DS3231::adjust(DateTime(ntp_time));
 }
 
 void Device_rtc::loop()
 {
-	if (timer.check(1000) == false)
+	if (!timer.check(1000))
 		return;
 
 	timer.reset();
