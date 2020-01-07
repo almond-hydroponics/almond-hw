@@ -1,3 +1,6 @@
 [submodule "lib/RTClib"]
 	path = lib/RTClib
 	url = https://github.com/adafruit/RTClib.git
+[submodule "lib/ACS712"]
+	path = lib/ACS712
+	url = https://github.com/rkoptev/ACS712-arduino.git

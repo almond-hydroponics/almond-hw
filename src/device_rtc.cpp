@@ -13,8 +13,13 @@ void Device_rtc::setup()
 {
 	LOG_INFO("RTC boot!");
 
-	if (!rtc.isrunning()) {
-		LOG_INFO("RTC is NOT running!");
+	if (!rtc.begin()) {
+		LOG_ERROR("Couldn't find RTC");
+		while(1);
+	}
+
+	if (rtc.lostPower()) {
+		LOG_INFO("RTC lost power, lets set the time!");
 
 		// following line sets the RTC to the date & time this sketch was compiled
 		rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
@@ -23,7 +28,7 @@ void Device_rtc::setup()
 		// rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
 	}
 	else {
-		LOG_INFO("RTC is running!");
+		LOG_ERROR("RTC is not running!");
 	}
 
 }
