@@ -144,3 +144,7 @@ const char *Logger::get_log_line(int line_number)
 	return buf;
 
 }
+
+void Logger::set_status(Logger::Status status)
+{
+}

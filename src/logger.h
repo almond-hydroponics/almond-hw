@@ -10,8 +10,14 @@ typedef void (*LoggerFatalHook)(const char *error_line);
 class Logger
 {
 public:
-	enum class Status { BOOTING, RUNNING, ERROR };
-	enum class Level { DEBUG, INFO, WARNING, ERROR, FATAL };
+	enum class Status
+	{
+		BOOTING, RUNNING, ERROR
+	};
+	enum class Level
+	{
+		DEBUG, INFO, WARNING, ERROR, FATAL
+	};
 
 	static const int max_lines = 16;
 	static const int max_line_len = 80;
@@ -28,7 +34,7 @@ public:
 	void log(Logger::Level level, const __FlashStringHelper *format, ...);
 
 	/// @returns pointer to the given line or NULL if not that many lines
-	const char * get_log_line(int line_number);
+	const char *get_log_line(int line_number);
 
 	void loop();
 
