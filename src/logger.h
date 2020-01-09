@@ -44,10 +44,10 @@ private:
 	int line_loop;
 	int serial_baudrate;
 	int led_pin;
-	bool led_state;
+	bool led_state{};
 	Logger::Status status;
-	char buffer[max_lines * max_line_len];
-	char format[max_line_len];
+	char buffer[max_lines * max_line_len]{};
+	char format[max_line_len]{};
 };
 
 struct InfoUptime
