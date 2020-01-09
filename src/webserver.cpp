@@ -105,8 +105,7 @@ void webserver_setup()
 	WEBSERVER.serveStatic("/data/", SPIFFS, "/", "max-age=86400");
 	WEBSERVER.onNotFound([]()
 						 {
-							 WEBSERVER
-								 .send(404, "text/plain", "Page not found");
+							 WEBSERVER.send(404, "text/plain", "Page not found");
 						 });
 	WEBSERVER.begin();
 }
