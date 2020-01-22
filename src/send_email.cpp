@@ -1,6 +1,6 @@
 #include <WiFiClientSecure.h>
 #include <Arduino.h>
-#include <base64.h>
+#include "../../../../../.platformio/packages/framework-arduinoespressif8266/cores/esp8266/base64.h"
 
 #define MODULE_NAME "send_email"
 

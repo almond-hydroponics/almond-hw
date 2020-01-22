@@ -20,8 +20,8 @@ public:
 				  uint8_t pin,
 				  uint8_t filter_len,
 				  bool invert);
-	virtual void setup() override;
-	virtual void loop() override;
+	void setup() override;
+	void loop() override;
 
 protected:
 	TimerOverride timer;

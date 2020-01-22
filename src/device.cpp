@@ -1,6 +1,7 @@
 #include <cstdio>
 
 #include "device.h"
+#include "logger.h"
 
 Device::Device(const char *name)
 {
@@ -32,6 +33,7 @@ void Device_input::update_value(int new_value)
 		return;
 
 	this->value = new_value;
+	LOG_INFO("Dev %s: value changed to %d", this->name, value);
 }
 
 int Device::jsonify(char *buffer, int buffer_len)
@@ -42,6 +44,7 @@ int Device::jsonify(char *buffer, int buffer_len)
 					   name,
 					   value);
 	if (len >= buffer_len) {
+		LOG_ERROR("Jsonify: too long on '%s'", name);
 		return 0;
 	}
 	return len;

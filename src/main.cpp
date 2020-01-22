@@ -1,31 +1,26 @@
-#include <ESP8266HTTPClient.h>
-#include <ESP8266httpUpdate.h>
-#include <ESP8266WiFiMulti.h>
 #include <ESP8266WiFi.h>
-#include <EEPROM.h>
-#include <PubSubClient.h>
-#include <ArduinoJson.h>
-#include <Base64.h>
 
 #include "config.h"
 
-// DEVICE CREDENTIALS
-// Customize this for each ESP Device
-const char *instanceId = "ALMOND01";
-const char *deviceId = "ABCDEF";
+#include "serial.h"
+#include "send_email.h"
+#include "logger.h"
+#include "webserver.h"
+#include "ntp_client.h"
 
-// SERVER DETAILS
-const char *mainServer = "192.168.1.4";
-const int mainServerPort = 8080;
+#include "platform.h"
+#include "device_rtc.h"
+#include "water_level.h"
+#include "device_pin_in.h"
+#include "device_pin_out.h"
+#include "application_logic.h"
 
-// SERVER USER CREDENTIALS
-String serverUserName = "device@orchid.com";
-String serverPassword = "deviceOrchid123";
-String sessionId = "";
-
-// API PATH VARIABLES
-const char *signInAPI = "/orchid/api/account/login";
-const char *deviceConfigAPI = "/orchid/api/admin/getESPConfig";
+Device_rtc		DEV_RTC("rtc");
+Water_level 	DEV_WLEVEL("water_level", PIN_TRIGGER, PIN_ECHO);
+Device_pin_in 	DEV_WDETECT("water_detect", PIN_WDETECT, 4, true); // water detect switch - when its physically low, its open -> high
+Device_pin_out 	DEV_PUMP("pump", PIN_PUMP, true); // pump inverted, since npn transistor - writing 0 will start the pump
+Device_pin_in 	DEV_SWITCH("switch", PIN_SWITCH, 8, true); // manual switch
+Logic 			LOGIC;
 
 // DATA FOR THIS DEVICE ONLY
 int sensorPin5 = 5;
@@ -41,49 +36,8 @@ int sensorPin8 = 8;
 bool sensorPin8enabled = false;
 int lastSensorPin8Value = 1;
 
-// Global Variables
-WiFiClient httpClient;
-WiFiClientSecure securedClient;
-
-long lastReconnectAttempt = 0;
-
-ESP8266WiFiMulti wifiMulti;
-PubSubClient mqttClient(httpClient);
-
-String ESPConfigResponse[6];
-String relayPrefix = "RELAY";
-String sensorPrefix = "SENSOR";
-
 long previousMillis = 0;
 unsigned long postInterval = 10000;
-
-// UTILITY METHODS
-String encodeCredentials()
-{
-	String cred = String(deviceId) + ":" + String(instanceId);
-	Serial.println(cred);
-	char inputString[cred.length()];
-	cred.toCharArray(inputString, cred.length() + 1);
-	int inputStringLength = sizeof(inputString);
-
-	int encodedLength = Base64.encodedLength(inputStringLength);
-	char encodedString[encodedLength];
-	Base64.encode(encodedString, inputString, inputStringLength);
-
-	return encodedString;
-}
-
-String decodeCredentials(String cred)
-{
-	char inputString[cred.length() + 1];
-	cred.toCharArray(inputString, cred.length() + 1);
-	int inputStringLength = sizeof(inputString);
-
-	int decodedLength = Base64.decodedLength(inputString, inputStringLength);
-	char decodedString[decodedLength];
-	Base64.decode(decodedString, inputString, inputStringLength);
-	return decodedString;
-}
 
 int pinConverter(int boardPin)
 {
@@ -107,351 +61,6 @@ int pinConverter(int boardPin)
 		return 15;
 }
 
-// RESTORE SETTINGS TO PINS
-void restoreSettingsToPins()
-{
-	for (int pinDex = 1; pinDex <= 4; pinDex++) {
-		int pinValue = (int)EEPROM.read(pinDex);
-		if (pinValue == 1 || pinValue == 0) {
-			digitalWrite(pinConverter(pinDex), pinValue);
-			Serial.println(
-				"Restoring " + String(pinDex) + ": " + String(pinValue));
-		}
-	}
-	int pinValue = (int)EEPROM.read(5);
-	sensorPin5enabled = pinValue == 1;
-	pinValue = (int)EEPROM.read(6);
-	sensorPin6enabled = pinValue == 1;
-	pinValue = (int)EEPROM.read(7);
-	sensorPin7enabled = pinValue == 1;
-	pinValue = (int)EEPROM.read(8);
-	sensorPin8enabled = pinValue == 1;
-
-}
-
-// RELAY METHODS
-void processMsgForRelay(String relayMessage)
-{
-	relayMessage.replace(relayPrefix, "");
-
-	String pinNoStr = relayMessage.substring(0, relayMessage.indexOf("="));
-	String pinValueStr = relayMessage.substring(relayMessage.indexOf("=") + 1,
-												relayMessage.length());
-
-	int pinNo = pinConverter(pinNoStr.toInt());
-	int pinValue = pinValueStr.toInt() <= 0 ? HIGH : LOW;
-	Serial.println("RELAY PIN:" + String(pinNoStr.toInt()) + " VALUE:" +
-		String(pinValue));
-	EEPROM.write(pinNoStr.toInt(), pinValue);
-	EEPROM.commit();
-	digitalWrite(pinNo, pinValue);
-}
-
-// SENSOR METHODS
-void processMsgForSensor(String sensorMessage)
-{
-	sensorMessage.replace(sensorPrefix, "");
-
-	String sensorNoStr = sensorMessage.substring(0,
-												 sensorMessage.indexOf("="));
-	String sensorStatusStr = sensorMessage.substring(
-		sensorMessage.indexOf("=") + 1, sensorMessage.length());
-
-	int sensorNo = sensorNoStr.toInt();
-	bool sensorEnabled = sensorStatusStr.toInt() > 0;
-
-	if (sensorNo == 5)
-		sensorPin5enabled = sensorEnabled;
-	if (sensorNo == 6)
-		sensorPin6enabled = sensorEnabled;
-	if (sensorNo == 7)
-		sensorPin7enabled = sensorEnabled;
-	if (sensorNo == 8)
-		sensorPin8enabled = sensorEnabled;
-	Serial.println("SENSOR PIN:" + String(sensorNo) + " VALUE:" +
-		String(sensorEnabled));
-	EEPROM.write(sensorNo, sensorEnabled);
-	EEPROM.commit();
-}
-
-// MQTT METHODS
-void processMQTTMessage(String message)
-{
-	Serial.println("MESSAGE:" + message);
-
-	bool msgIdentified = false;
-	// PROCESS RELAY PREFIXED MESSAGES
-	if (message.indexOf(relayPrefix) >= 0) {
-		processMsgForRelay(message);
-	}
-	// PROCESS SENSOR PREFIXED MESSAGES
-	if (message.indexOf(sensorPrefix) >= 0) {
-		processMsgForSensor(message);
-	}
-
-}
-
-void mqttCallback(char *topic, byte *payload, unsigned int payloadLength)
-{
-	// PROCESS MQTT MESSAGE
-	Serial.println("TOPIC: " + String(topic));
-	String mqttResponse = "";
-	for (int i = 0; i < payloadLength; i++) {
-		mqttResponse += (char)payload[i];
-	}
-	processMQTTMessage(mqttResponse);
-	mqttResponse = "";
-
-	if ((char)payload[0] == '1') {
-		digitalWrite(pinConverter(1), HIGH);
-		Serial.println("PUMP ON");
-	}
-	else {
-		digitalWrite(pinConverter(1), LOW);
-		Serial.println("PUMP OFF");
-	}
-}
-
-void publishToMQTT(const String &message)
-{
-	const char *messagePointer = message.c_str();
-	const char *mqttCommonChannel = ESPConfigResponse[4].c_str();
-	mqttClient.publish(mqttCommonChannel, messagePointer);
-}
-
-// DETECT INPUT/OUTPUT METHODS
-void publishSensorValue(int sensorPin, int sensorValue)
-{
-	String msgType = "LOG";
-	String dataToPost =
-		msgType + "|" +
-			String(deviceId) + "|" +
-			String(instanceId) + "|" +
-			sensorPrefix + String(sensorPin) + "|" +
-			String(sensorValue);
-
-	Serial.println("Posting:" + dataToPost);
-	publishToMQTT(dataToPost);
-}
-
-void detectSensorTrigger()
-{
-	// READ D5 VALUE
-	int pin1Value = digitalRead(pinConverter(sensorPin5));
-	if (pin1Value != lastSensorPin5Value && sensorPin5enabled) {
-		publishSensorValue(sensorPin5, pin1Value);
-		lastSensorPin5Value = pin1Value;
-	}
-	// READ D6 VALUE
-	int pin2Value = digitalRead(pinConverter(sensorPin6));
-	if (pin2Value != lastSensorPin6Value && sensorPin6enabled) {
-		publishSensorValue(sensorPin6, pin2Value);
-		lastSensorPin6Value = pin2Value;
-	}
-	// READ D7 VALUE
-	int pin3Value = digitalRead(pinConverter(sensorPin7));
-	if (pin3Value != lastSensorPin7Value && sensorPin7enabled) {
-		publishSensorValue(sensorPin7, pin3Value);
-		lastSensorPin7Value = pin3Value;
-	}
-	// READ D8 VALUE
-	int pin4Value = digitalRead(pinConverter(sensorPin8));
-	if (pin4Value != lastSensorPin8Value && sensorPin8enabled) {
-		publishSensorValue(sensorPin8, pin4Value);
-		lastSensorPin8Value = pin4Value;
-	}
-}
-
-// BOOT UP METHODS
-void wifiOnConnect()
-{
-	digitalWrite(pinConverter(0), HIGH);
-	delay(1000);
-	digitalWrite(pinConverter(0), LOW);
-	delay(1000);
-}
-
-void loginToWifi()
-{
-	WiFi.mode(WIFI_STA);
-	wifiMulti.addAP(CONFIG.wlan.ssid, CONFIG.wlan.password);
-//	wifiMulti.addAP("Konde", "fkonde14#");
-//	wifiMulti.addAP("Tech_D3709889", "XEXNKJEX");
-
-	Serial.println("Connecting Wifi");
-	while (wifiMulti.run() != WL_CONNECTED) {
-		wifiOnConnect();
-		Serial.print(".");
-		delay(1000);
-	}
-	Serial.println("WiFi connected");
-	Serial.println("IP address: ");
-	Serial.println(WiFi.localIP());
-	digitalWrite(pinConverter(0), HIGH);
-}
-
-template<class T>
-void loginToServer(T webClient)
-{
-	sessionId = "";
-	if (!webClient.connect(mainServer, mainServerPort)) {
-		Serial.println("Connection failed");
-		return;
-	}
-
-	webClient.println("POST " + String(signInAPI) + " HTTP/1.0");
-	webClient.println("Host: " + String(mainServer));
-	webClient.println("Connection: Keep-Alive");
-	webClient.println("Content-Type: application/json");
-
-	String postData = R"({"email":")" + serverUserName + R"(","password":")" +
-		serverPassword + "\"}";
-
-	webClient.print("Content-Length: ");
-	webClient.println(postData.length());
-	webClient.println();
-	webClient.println(postData);
-
-	String response = webClient.readString();
-	sessionId = response.substring(response.indexOf("SESSIONID="),
-								   response.length());
-	sessionId = sessionId.substring(0, sessionId.indexOf(";"));
-	Serial.println(sessionId);
-}
-
-template<typename Client>
-void fetchESPConfiguration(Client &webClient)
-{
-	if (sessionId.length() == 0) {
-		Serial.println("Device has to login to get cookie");
-		return;
-	}
-	if (!webClient.connect(mainServer, mainServerPort)) {
-		Serial.println("Connection failed");
-		return;
-	}
-
-	String encodedCredUrl =
-		String(deviceConfigAPI) + "/" + encodeCredentials();
-	webClient.print(String("GET ") + encodedCredUrl + " HTTP/1.0\r\n" +
-		"Host: " + mainServer + "\r\n" +
-		"User-Agent: BuildFailureDetectorESP8266\r\n" +
-		"Connection: close\r\n" +
-		"Cookie: " + sessionId + "\r\n\r\n");
-
-	Serial.println("Request sent as:" + encodedCredUrl);
-
-	String response = "";
-	while (webClient.connected()) {
-		if (webClient.available()) {
-			char c = webClient.read();
-			if (c == '[' || response.length() > 0 || c == ']') {
-				response += String(c);
-				if (c == ']') {
-					break;
-				}
-			}
-		}
-	}
-
-	if (response.length() == 0) {
-		Serial.println("Response was empty.");
-		return;
-	}
-	response = response.substring(1, response.length() - 1);
-	Serial.println("Response was:" + response);
-
-	int a0 = 0, a1 = response.indexOf('|', a0);
-	int b0 = a1 + 1, b1 = response.indexOf('|', b0);
-	int c0 = b1 + 1, c1 = response.indexOf('|', c0);
-	int d0 = c1 + 1, d1 = response.indexOf('|', d0);
-	int e0 = d1 + 1, e1 = response.indexOf('|', e0);
-	int f0 = e1 + 1, f1 = response.indexOf('|', f0);
-
-	ESPConfigResponse[0] = response.substring(a0, a1); //mqttServer
-	ESPConfigResponse[1] = response.substring(b0, b1); //mqttPort
-	ESPConfigResponse[2] = response.substring(c0, c1); //mqttUser
-	ESPConfigResponse[3] = response.substring(d0, d1); //mqttPassword
-	ESPConfigResponse[4] = response.substring(e0, e1); //mqttCommonChannel
-	ESPConfigResponse[5] = response.substring(f0, f1); //thisDeviceChannel
-
-	webClient.stop();
-}
-
-void loginToMQTT()
-{
-	// const char* mqttServer = ESPConfigResponse[0].c_str();
-	// int mqttPort = ESPConfigResponse[1].toInt();
-	// const char* mqttUser = ESPConfigResponse[2].c_str();
-	// const char* mqttPassword = ESPConfigResponse[3].c_str();
-
-	const char *mqttServer = CONFIG.mqtt.mqtt_server;
-	int mqttPort = CONFIG.mqtt.mqtt_port;
-	const char *mqttUser = CONFIG.mqtt.mqtt_user;
-	const char *mqttPassword = CONFIG.mqtt.mqtt_password;
-
-	mqttClient.setServer(mqttServer, mqttPort);
-	mqttClient.setCallback(mqttCallback);
-
-	Serial.println("Starting - MQTT...");
-	while (!mqttClient.connected()) {
-		Serial.println(&"Connecting to MQTT... :"[mqttClient.state()]);
-		if (mqttClient.connect(deviceId, mqttUser, mqttPassword)) {
-			Serial.println("Connected as :" + String(deviceId));
-		}
-		else {
-			Serial.println(&"Failed with state :"[mqttClient.state()]);
-			delay(1000);
-		}
-
-	}
-}
-
-void subscribeToMQTT()
-{
-	// const char* thisDeviceChannel = ESPConfigResponse[5].c_str();
-	const char *thisDeviceChannel = "almond/pumpSchedule";
-	mqttClient.subscribe(thisDeviceChannel);
-	// Serial.println("Subscribed to channel: " + ESPConfigResponse[5]);
-	Serial.println("Subscribed to channel: ");
-}
-
-boolean reconnect()
-{
-	if (mqttClient.connect("arduinoClient")) {
-		// Once connected, publish an announcement...
-		mqttClient.publish("outTopic", "hello world");
-		// ... and resubscribe
-		mqttClient.subscribe("inTopic");
-	}
-	return mqttClient.connected();
-}
-
-// void reconnect()
-// {
-//   // Loop until we're reconnected
-//   while (!mqttClient.connected()) {
-//     Serial.print("Attempting MQTT connection...");
-//     // Create a random client ID
-//     String clientId = "ESP8266Client-";
-//     clientId += String(random(0xffff), HEX);
-//     // Attempt to connect
-//     if (mqttClient.connect(clientId.c_str())) {
-//       Serial.println("connected");
-//       // Once connected, publish an announcement...
-//       mqttClient.publish("outTopic", "hello world");
-//       // ... and resubscribe
-//       mqttClient.subscribe("inTopic");
-//     } else {
-//       Serial.print("failed, rc=");
-//       Serial.print(mqttClient.state());
-//       Serial.println(" try again in 5 seconds");
-//       // Wait 5 seconds before retrying
-//       delay(5000);
-//     }
-//   }
-// }
-
 void setupPinModes()
 {
 	pinMode(pinConverter(0), OUTPUT);
@@ -466,44 +75,199 @@ void setupPinModes()
 	pinMode(pinConverter(8), INPUT_PULLDOWN_16);
 }
 
-void setup()
+/** Make some artificial devices for more information */
+class Device_uptime: public Device_input
 {
-	// SETUP ESP8266 DEVICE
-	Serial.begin(115200);
-	Serial.println();
+public:
+	Device_uptime()
+		: Device_input("uptime")
+	{};
+	virtual void loop() override
+	{ this->value = millis() / 1000; };
+};
 
-	while (!Serial) { ; // wait for serial port to connect. Needed for native USB only
+class Device_status: public Device_input
+{
+public:
+	Device_status()
+		: Device_input("status")
+	{};
+	virtual void loop() override
+	{ this->value = (int)LOG.get_status(); };
+};
+
+Device_uptime DEV_UPTIME;
+
+Device_status DEV_STATUS;
+
+Device *const DEVICES[] =
+	{&DEV_WLEVEL, &DEV_WDETECT, &DEV_PUMP, &DEV_UPTIME, &DEV_RTC, &DEV_STATUS,
+	 &DEV_SWITCH};
+
+#define DEVICES_N (sizeof(DEVICES)/sizeof(Device*))
+
+static void logger_fatal_hook(const char *log_line)
+{
+	// if we are not connected, we are not storing the messages for now.
+	if (!PLATFORM.connected())
+		return;
+
+	int buffer_len = Logger::max_line_len + 128;
+	int subject_len = 256;
+	char *buffer = (char *)malloc(buffer_len);
+	char *subject = (char *)malloc(subject_len);
+
+	memset(buffer, 0x00, buffer_len);
+	memset(subject, 0x00, subject_len);
+
+	// out of memory, lets skip the whole thing.
+	if (buffer == nullptr || subject == nullptr)
+		return;
+
+	snprintf(buffer,
+			 buffer_len - 1,
+			 "Error on %s: %s.\n",
+			 CONFIG.hostname,
+			 log_line);
+	snprintf(subject,
+			 subject_len - 1,
+			 "[ESP] %s : error detected",
+			 CONFIG.hostname);
+
+	email_send(&CONFIG.email, CONFIG.email.receiver, subject, buffer);
+
+	free(subject);
+	free(buffer);
+}
+
+static int generate_device_json(char *buffer)
+{
+	strcpy(buffer, "{\"dev\":[");
+	int buffer_offset = strlen(buffer);
+	unsigned int loop;
+	for (loop = 0; loop < DEVICES_N; loop++) {
+		Device *dev = DEVICES[loop];
+		int added = dev->jsonify(buffer + buffer_offset,
+								 WEBSERVER_MAX_RESPONSE_SIZE - buffer_offset);
+
+		if (added == 0)
+			break;
+
+		buffer_offset += added;
+
+		if (buffer_offset + 2 >= WEBSERVER_MAX_RESPONSE_SIZE)
+			break;
+
+		buffer[buffer_offset] = ',';
+		buffer[buffer_offset + 1] = 0;
+		buffer_offset += 1;
 	}
 
-	Serial.println("=====loginToWifi=====");
-	loginToWifi();
+	if (loop < DEVICES_N) // exited with break
+	{
+		return 0;
+	}
+	else {
+		buffer[buffer_offset - 1] = ']';
+		buffer[buffer_offset] = '}';
+		buffer[buffer_offset + 1] = 0;
+		return (buffer_offset + 1);
+	}
+}
 
-	Serial.println("=====loginToServer=====");
-	//===========================================================================
-	//  IMPLEMENTATIONS
-	//  USE EITHER THE HTTP OR THE HTTPS ONE BASED ON SITUATION
-	//
-	//===========================================================================
-	// mainServerPort == 443 ? loginToServer(securedClient) : loginToServer(httpClient);
-	// Serial.println("========================================================");
+static void handle_get_devices()
+{
+	char *buffer = webserver_get_buffer();
 
-	// Serial.println("=================fetchESPConfiguration==================");
-	// mainServerPort == 443 ? fetchESPConfiguration(securedClient) : fetchESPConfiguration(httpClient);
-	// Serial.println("========================================================");
+	if (buffer == nullptr)
+		return;
 
-	Serial.println("=====loginToMQTT=====");
-	loginToMQTT();
+	int blen = generate_device_json(buffer);
 
-	Serial.println("=====subscribeToMqtt======");
-	subscribeToMQTT();
+	if (blen == 0)
+		WEBSERVER
+			.send(500, "application/json", "{\"error\":\"out of buffer\"}");
+	else
+		WEBSERVER.send(200, "application/json", buffer);
 
-	Serial.println("=====setupPinModes=====");
-	setupPinModes();
+	free(buffer);
+}
 
-	Serial.println("=====restoreSettingsToPins=====");
-	EEPROM.begin(8);
-	restoreSettingsToPins();
-	lastReconnectAttempt = 0;
+static bool handle_set_email()
+{
+	LOG_INFO("Status email requested.");
+	const int subject_len = 256;
+	char *subject = (char *)malloc(subject_len);
+	char *buffer = (char *)malloc(WEBSERVER_MAX_RESPONSE_SIZE);
+	memset(subject, 0x00, subject_len);
+	memset(buffer, 0x00, WEBSERVER_MAX_RESPONSE_SIZE);
+
+	snprintf(subject,
+			 subject_len,
+			 "[ESP] %s : Status report",
+			 CONFIG.hostname);
+	int blen = generate_device_json(buffer);
+	serial_print_raw(buffer, blen, true);
+	bool ret =
+		email_send(&CONFIG.email, CONFIG.email.receiver, subject, buffer);
+
+	free(subject);
+	free(buffer);
+	return ret;
+}
+
+static bool handle_set_ntp()
+{
+	uint32_t ntp_time = ntp_update();
+	if (ntp_time == 0) {
+		return false;
+	}
+	Device_rtc::update_time(ntp_time);
+	return true;
+}
+
+static void handle_http(bool ret)
+{
+	char *buffer = webserver_get_buffer();
+	if (buffer == nullptr)
+		return;
+
+	int resp_code = ret ? 200 : 500;
+	const char *code = ret ? "ok" : "err";
+
+	snprintf(buffer, WEBSERVER_MAX_RESPONSE_SIZE, R"({"status":"%s"})", code);
+	WEBSERVER.send(resp_code, "application/json", buffer);
+	free(buffer);
+}
+
+void handle_get_time()
+{
+	Config_run_table_time time{};
+	char *buffer = webserver_get_buffer();
+	if (buffer == nullptr)
+		return;
+
+	DEV_RTC.time_of_day(&time);
+
+	snprintf(buffer,
+			 WEBSERVER_MAX_RESPONSE_SIZE,
+			 R"({"hour":%d,"min":%d,"sec":%d})",
+			 time.hour,
+			 time.minute,
+			 time.second);
+	WEBSERVER.send(200, "application/json", buffer);
+	free(buffer);
+}
+
+void add_password_protected(const char *url, void (*handler)())
+{
+	char *buffer = (char *)malloc(1024);
+	strcpy(buffer, "/set/");
+	strcat(buffer, CONFIG.password);
+	strcat(buffer, "/");
+	strcat(buffer, url);
+	WEBSERVER.on(buffer, handler);
+	free(buffer);
 }
 
 void sendHeartBeatOnInterval()
@@ -516,28 +280,71 @@ void sendHeartBeatOnInterval()
 	}
 }
 
-void loop()
+void handle_serial()
 {
-	if (!mqttClient.connected()) {
-		long now = millis();
-		if (now - lastReconnectAttempt > 5000) {
-			lastReconnectAttempt = now;
-			// Attempt to reconnect
-			if (reconnect()) {
-				lastReconnectAttempt = 0;
-			}
-		}
+	int line_len;
+	char *line = serial_receive(&line_len);
+
+	if (line == nullptr)
+		return;
+
+	LOG_WARN("Serial: %s ", line);
+
+	if (strcmp(line, "email") == 0) {
+		handle_set_email();
 	}
 	else {
-		// Client connected
-
-		mqttClient.loop();
+		serial_print("Invalid command\n");
 	}
-	// if (!mqttClient.connected()) {
-	//     long now = millis();
-	//     reconnect();
-	// }
-	// mqttClient.loop();
-	// sendHeartBeatOnInterval();
-	detectSensorTrigger();
+}
+
+void setup()
+{
+	// SETUP ESP8266 DEVICE
+	LOG.setup_serial(CONFIG.hostname, 115200);
+	LOG.setup_led(PIN_LED);
+	LOG.setup_fatal_hook(logger_fatal_hook);
+	Platform_ESP8266::setup();
+
+	webserver_setup();
+
+	for (auto loop : DEVICES)
+		loop->setup();
+
+	LOG.set_status(Logger::Status::RUNNING);
+	WEBSERVER.on("/get/dev", handle_get_devices);
+	WEBSERVER.on("/get/time", handle_get_time);
+	add_password_protected("ntp", []
+	{ handle_http(handle_set_ntp()); });
+	//out of memory: add_password_protected("email", handle_set_email );
+}
+
+void loop()
+{
+	LOG.loop();
+	handle_serial();
+
+	static unsigned long avail_memory_last = 0xFFFF;
+	unsigned long avail_memory_now = Platform_ESP8266::get_free_heap();
+	if (avail_memory_now < avail_memory_last) {
+		LOG_INFO("Available memory dropped: %u", avail_memory_now);
+		avail_memory_last = avail_memory_now;
+	}
+
+	webserver_loop();
+	PLATFORM.loop();
+
+	delay(10);
+
+	for (auto loop : DEVICES)
+		loop->loop();
+
+	Config_run_table_time time_now{};
+	DEV_RTC.time_of_day(&time_now);
+
+	bool logic_changed = LOGIC.run_logic(&time_now,
+										 &DEV_PUMP,
+										 DEV_WLEVEL.get_value(),
+										 DEV_WDETECT.get_value(),
+										 DEV_SWITCH.get_value());
 }

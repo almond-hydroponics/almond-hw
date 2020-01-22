@@ -15,7 +15,7 @@ void Device_rtc::setup()
 
 	if (!rtc.begin()) {
 		LOG_ERROR("Couldn't find RTC");
-		while(1);
+		while (1);
 	}
 
 	if (rtc.lostPower()) {
@@ -30,7 +30,6 @@ void Device_rtc::setup()
 	else {
 		LOG_ERROR("RTC is not running!");
 	}
-
 }
 
 void Device_rtc::time_of_day(Config_run_table_time *time)
@@ -53,9 +52,7 @@ void Device_rtc::loop()
 		return;
 
 	timer.reset();
-	DateTime now = rtc.now();
+	DateTime now = RTC_DS3231::now();
 	value =
 		now.unixtime(); // this loses one bit,   math.log( 365*24*60*60*60 )/math.log(2) = 30.81738694131409 so we should be ok, until = 2030, thats ok.
 }
-
-
