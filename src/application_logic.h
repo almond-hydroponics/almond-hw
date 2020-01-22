@@ -20,7 +20,6 @@ enum class LogicStatus
 /** The main logic, its not really a device, but lets use it as such, since that we we can easily get a value out of it */
 class Logic
 {
-
 public:
 	Logic();
 
@@ -53,7 +52,6 @@ protected:
 
 	LogicStatus status;
 	bool pump_start_check_done{};
-
 };
 
 #endif //APPLICATION_LOGIC_H

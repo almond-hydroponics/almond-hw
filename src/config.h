@@ -49,6 +49,12 @@ struct Config_pump
 	uint8_t threshold_water_up_s;
 };
 
+struct Config_push
+{
+	const char *host;
+	const char *api_key;
+};
+
 struct Config_mqtt
 {
 	const char *mqtt_server;
@@ -63,6 +69,7 @@ struct Config
 	Config_wlan wlan;
 	Config_run_table runtable;
 	Config_pump pump;
+	Config_push push;
 	Config_mqtt mqtt;
 	const char *hostname;
 	const char *password;
@@ -73,13 +80,13 @@ extern const Config CONFIG;
 
 // Hardware configurations fixed
 
-#define PIN_RTC_SCL 14
-#define PIN_RTC_SDA 12
-#define PIN_LED     15
-#define PIN_PUMP    4
-#define PIN_SWITCH  16
-#define PIN_TRIGGER 2
-#define PIN_ECHO    5
-#define PIN_WDETECT 13
+#define PIN_RTC_SCL 14	// board pin 5
+#define PIN_RTC_SDA 12	// board pin 6
+#define PIN_LED     15	// board pin 8
+#define PIN_PUMP    4	// board pin 2
+#define PIN_SWITCH  16	// board pin 0
+#define PIN_TRIGGER 2	// board pin 4
+#define PIN_ECHO    5	// board pin 1
+#define PIN_WDETECT 13	// board pin 7
 
 #endif //ALMOND_HW_CONFIG_H

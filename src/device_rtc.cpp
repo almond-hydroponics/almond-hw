@@ -27,9 +27,6 @@ void Device_rtc::setup()
 		// January 21, 2014 at 3am you would call:
 		// rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
 	}
-	else {
-		LOG_ERROR("RTC is not running!");
-	}
 }
 
 void Device_rtc::time_of_day(Config_run_table_time *time)

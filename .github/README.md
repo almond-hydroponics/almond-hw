@@ -8,9 +8,9 @@
 
 <div align="center">
 
-    Project almond hardware esp32 control code for hydroponics
+    Project almond hardware esp8266 control code for hydroponics system
 
-  [![Butternut](../public/img/readme.svg)](https://almond.com)
+  [![Almond](../public/img/readme.svg)](https://almond.com)
 
   #### Simple but complicated butternut
 
@@ -53,7 +53,7 @@ This is a hydroponics farm control system to be used at home with limited space,
 
 ### Support or Contribution
 
-For any suggestions or contributions please do not hesistate to contact the owners of this repository.
+For any suggestions or contributions please do not hesitate to contact the owners of this repository.
 
 Contributions to this project are welcomed by all, If you need to contribute, follow the steps below
 

@@ -14,6 +14,7 @@
 #include "device_pin_in.h"
 #include "device_pin_out.h"
 #include "application_logic.h"
+#include "push_data.h"
 
 Device_rtc		DEV_RTC("rtc");
 Water_level 	DEV_WLEVEL("water_level", PIN_TRIGGER, PIN_ECHO);
@@ -21,6 +22,7 @@ Device_pin_in 	DEV_WDETECT("water_detect", PIN_WDETECT, 4, true); // water detec
 Device_pin_out 	DEV_PUMP("pump", PIN_PUMP, true); // pump inverted, since npn transistor - writing 0 will start the pump
 Device_pin_in 	DEV_SWITCH("switch", PIN_SWITCH, 8, true); // manual switch
 Logic 			LOGIC;
+Push_data		PUSH;
 
 // DATA FOR THIS DEVICE ONLY
 int sensorPin5 = 5;
@@ -186,11 +188,19 @@ static void handle_get_devices()
 
 	if (blen == 0)
 		WEBSERVER
-			.send(500, "application/json", "{\"error\":\"out of buffer\"}");
+			.send(500, "application/json", R"({"error":"out of buffer"})");
 	else
 		WEBSERVER.send(200, "application/json", buffer);
 
 	free(buffer);
+}
+
+static bool handle_push_devices(bool force)
+{
+	int values[6];
+	for (unsigned int loop = 0; loop < 6; loop++)
+		values[loop] = DEVICES[loop]->get_value();
+	return PUSH.thingspeak_push((const int *)values, 0, 6, force);
 }
 
 static bool handle_set_email()
@@ -347,4 +357,24 @@ void loop()
 										 DEV_WLEVEL.get_value(),
 										 DEV_WDETECT.get_value(),
 										 DEV_SWITCH.get_value());
+
+	if (logic_changed) {
+		LogicStatus status = LOGIC.get_status();
+
+		// if new status is idle, then we were pumping -> push the delays (assuming valid)
+		if (status == LogicStatus::idle) {
+			int delays[2];
+			bool valid = LOGIC.get_measurements(delays);
+			if (valid) {
+				PUSH.thingspeak_push((const int *)delays, 6, 2, true);
+			}
+		}
+		else if (status == LogicStatus::pump_started
+			|| status == LogicStatus::draining) {
+			handle_push_devices(true);
+		}
+	}
+	else {
+		handle_push_devices(false);
+	}
 }

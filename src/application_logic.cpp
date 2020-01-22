@@ -178,4 +178,3 @@ bool Logic::run_logic(const Config_run_table_time *time_now,
 	output->set_value(pump_value, true);
 	return true;
 }
-
