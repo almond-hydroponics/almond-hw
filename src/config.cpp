@@ -23,6 +23,10 @@ const Config CONFIG = {
 		.low_level_height_mm = 400,
 		.threshold_water_up_s = 10,
 	},
+	.push = {
+      .host = "api.thingspeak.com",
+      .api_key = "0HKVWHOV1HV0PJB9"
+   },
 	.mqtt = {
 		.mqtt_server = "134.209.190.108",
 		.mqtt_port = 1883,
