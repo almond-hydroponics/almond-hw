@@ -31,11 +31,11 @@ void Logger::setup_fatal_hook(LoggerFatalHook hook)
 	this->fatal_hook = hook;
 }
 
-void Logger::setup_led(int led_pin_)
+void Logger::setup_led(int _led_pin)
 {
-	this->led_pin = led_pin;
-	pinMode(led_pin, OUTPUT);
-	digitalWrite(led_pin, 1);
+	this->led_pin = _led_pin;
+	pinMode(_led_pin, OUTPUT);
+	digitalWrite(_led_pin, 1);
 	this->led_state = true;
 	this->led_timer.reset();
 }

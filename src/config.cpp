@@ -20,7 +20,7 @@ const Config CONFIG = {
 		.period_off = {.hour = 0, .minute = 15, .second = 0},
 	},
 	.pump = {
-		.low_level_height_mm = 400,
+		.low_level_height_mm = 900,
 		.threshold_water_up_s = 10,
 	},
 	.push = {
