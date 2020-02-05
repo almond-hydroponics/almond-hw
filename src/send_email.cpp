@@ -9,14 +9,9 @@
 
 #define FSTR
 
-bool read_response(WiFiClientSecure *client,
-				   char *buffer,
-				   int buffer_len,
-				   const char *endmarker,
-				   const char *exp_response,
-				   const char *log_string)
+bool read_response(WiFiClientSecure *client, char *buffer, int buffer_len,
+	const char *endmarker, const char *exp_response, const char *log_string)
 {
-
 	int buffer_offset = 0;
 	bool line_change_found = false;
 	int endmarker_len = strlen(endmarker);
@@ -27,7 +22,6 @@ bool read_response(WiFiClientSecure *client,
 	memset(buffer, 0x00, buffer_len);
 	while (!line_change_found && (delay_loop < delay_loop_max)) {
 		int avail = client->available();
-
 
 		if (avail == 0) {
 			delay(10);
@@ -44,7 +38,6 @@ bool read_response(WiFiClientSecure *client,
 		if (strstr(buffer + search_start, endmarker) != NULL) {
 			line_change_found = true;
 		}
-
 		buffer_offset += red;
 	}
 
@@ -65,80 +58,36 @@ bool read_response(WiFiClientSecure *client,
 	return true;
 }
 
-bool email_send_raw(const Config_email *settings,
-					const char *receiver,
-					const char *subject,
-					const char *message,
-					char *buffer,
-					WiFiClientSecure *client)
+bool email_send_raw(const Config_email *settings, const char *receiver, const char *subject,
+	const char *message, char *buffer, WiFiClientSecure *client)
 {
-
-	LOG_INFO("Sending email via '%s:%d'",
-			 settings->server_host,
-			 settings->server_port);
+	LOG_INFO("Sending email via '%s:%d'", settings->server_host, settings->server_port);
 
 	if (!client->connect(settings->server_host, settings->server_port)) {
 		LOG_WARN("Send failed on connect to server");
 		return false;
 	}
 
-
-	if (!read_response(client,
-					   buffer,
-					   EMAIL_SEND_MAX_SIZE,
-					   "\n",
-					   FSTR
-					   ("220"),
-					   FSTR
-					   ("Handshake")))
+	if (!read_response(client, buffer, EMAIL_SEND_MAX_SIZE, "\n", FSTR ("220"), FSTR ("Handshake")))
 		return false;
 
-	sprintf(buffer, FSTR("EHLO %s"), client->localIP().toString().c_str());
+	sprintf(buffer, FSTR("HELLO %s"), client->localIP().toString().c_str());
 	client->println(buffer);
 
-	if (!read_response(client,
-					   buffer,
-					   EMAIL_SEND_MAX_SIZE,
-					   "\n\n",
-					   FSTR
-					   ("250"),
-					   FSTR
-					   ("Ehlo")))
+	if (!read_response(client, buffer, EMAIL_SEND_MAX_SIZE, "\n\n", FSTR ("250"), FSTR ("Hello")))
 		return false;
 
 	sprintf(buffer, FSTR("AUTH LOGIN"));
 	client->println(buffer);
-	if (!read_response(client,
-					   buffer,
-					   EMAIL_SEND_MAX_SIZE,
-					   "\n",
-					   FSTR
-					   ("334"),
-					   FSTR
-					   ("login")))
+	if (!read_response(client, buffer, EMAIL_SEND_MAX_SIZE, "\n", FSTR ("334"), FSTR ("login")))
 		return false;
 
-	base64 encoder;
-
-	client->println(encoder.encode(settings->login));
-	if (!read_response(client, buffer,
-					   EMAIL_SEND_MAX_SIZE,
-					   "\n",
-					   FSTR
-					   ("334"),
-					   FSTR
-					   ("login_user")))
+	client->println(base64::encode(settings->login));
+	if (!read_response(client, buffer, EMAIL_SEND_MAX_SIZE, "\n", FSTR ("334"), FSTR ("login_user")))
 		return false;
 
-	client->println(encoder.encode(settings->password));
-	if (!read_response(client,
-					   buffer,
-					   EMAIL_SEND_MAX_SIZE,
-					   "\n",
-					   FSTR
-					   ("235"),
-					   FSTR
-					   ("login_pass")))
+	client->println(base64::encode(settings->password));
+	if (!read_response(client, buffer, EMAIL_SEND_MAX_SIZE, "\n", FSTR ("235"), FSTR ("login_pass")))
 		return false;
 
 	LOG_INFO("Login ok");
@@ -146,56 +95,22 @@ bool email_send_raw(const Config_email *settings,
 	sprintf(buffer, FSTR("MAIL FROM: <%s>"), settings->login);
 	client->println(buffer);
 
-	if (!read_response(client,
-					   buffer,
-					   EMAIL_SEND_MAX_SIZE,
-					   "\n",
-					   FSTR
-					   ("250"),
-					   FSTR
-					   ("mail_from")))
+	if (!read_response(client, buffer, EMAIL_SEND_MAX_SIZE, "\n", FSTR ("250"), FSTR ("mail_from")))
 		return false;
 
 	sprintf(buffer, FSTR("RCPT TO: <%s>"), receiver);
 	client->println(buffer);
-	if (!read_response(client,
-					   buffer,
-					   EMAIL_SEND_MAX_SIZE,
-					   "\n",
-					   FSTR
-					   ("250"),
-					   FSTR
-					   ("mail_to")))
+	if (!read_response(client, buffer, EMAIL_SEND_MAX_SIZE, "\n", FSTR ("250"), FSTR ("mail_to")))
 		return false;
 
 	client->println(FSTR("DATA"));
-	if (!read_response(client,
-					   buffer,
-					   EMAIL_SEND_MAX_SIZE,
-					   "\n",
-					   FSTR
-					   ("354"),
-					   FSTR
-					   ("data")))
+	if (!read_response(client, buffer, EMAIL_SEND_MAX_SIZE, "\n", FSTR ("354"), FSTR ("data")))
 		return false;
 
-	sprintf(buffer,
-			FSTR
-			("From: <%s>\nTo: <%s>\nSubject: %s\r\n\n%s\r\n.\r\nQUIT"),
-			settings->login,
-			receiver,
-			subject,
-			message);
+	sprintf(buffer, FSTR ("From: <%s>\nTo: <%s>\nSubject: %s\r\n\n%s\r\n.\r\nQUIT"), settings->login, receiver, subject, message);
 	client->println(buffer);
 
-	if (!read_response(client,
-					   buffer,
-					   EMAIL_SEND_MAX_SIZE,
-					   "\n",
-					   FSTR
-					   ("250"),
-					   FSTR
-					   ("quit")))
+	if (!read_response(client, buffer, EMAIL_SEND_MAX_SIZE, "\n", FSTR ("250"), FSTR ("quit")))
 		return false;
 
 	LOG_INFO("Message sent ok!");

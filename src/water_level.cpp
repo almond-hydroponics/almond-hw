@@ -27,8 +27,7 @@ void Water_level::setup()
 void Water_level::measure_pulse_in()
 {
 	constexpr const float speed_of_sound_scalar = 0.17175f;
-	const unsigned long
-		max_timeout = CONFIG.pump.low_level_height_mm / speed_of_sound_scalar;
+	const unsigned long max_timeout = CONFIG.pump.low_level_height_mm / speed_of_sound_scalar;
 
 	float duration = pulseIn(this->pin_echo, HIGH, max_timeout * 2);
 
@@ -59,7 +58,6 @@ void Water_level::measure_pulse_in()
 
 	int new_value = (int)ma_new;
 
-
 	this->value = new_value;
 }
 
@@ -76,7 +74,6 @@ void Water_level::loop()
 
 	if (!this->timer.check(measure_interval))
 		return;
-
 
 	this->timer.reset();
 

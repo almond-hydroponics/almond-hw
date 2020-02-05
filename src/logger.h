@@ -25,7 +25,7 @@ public:
 	Logger();
 
 	void setup_serial(const char *hostname, int baudrate = 115200);
-	void setup_led(int led_pin_);
+	void setup_led(int _led_pin);
 	void setup_fatal_hook(LoggerFatalHook hook);
 
 	Logger::Status get_status();

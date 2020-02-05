@@ -84,7 +84,7 @@ public:
 	Device_uptime()
 		: Device_input("uptime")
 	{};
-	virtual void loop() override
+	void loop() override
 	{ this->value = millis() / 1000; };
 };
 
@@ -344,13 +344,17 @@ void loop()
 	webserver_loop();
 	PLATFORM.loop();
 
-	delay(10);
+	sendHeartBeatOnInterval();
+//	delay(10);
 
 	for (auto loop : DEVICES)
 		loop->loop();
 
 	Config_run_table_time time_now{};
 	DEV_RTC.time_of_day(&time_now);
+
+//	LOG_INFO("The temperature is: %f", RTC_DS3231::getTemperature());
+//	sendHeartBeatOnInterval();
 
 	bool logic_changed = LOGIC.run_logic(&time_now,
 										 &DEV_PUMP,
