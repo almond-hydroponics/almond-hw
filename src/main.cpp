@@ -7,22 +7,28 @@
 #include "logger.h"
 #include "webserver.h"
 #include "ntp_client.h"
+#include <EEPROM.h>
 
 #include "platform.h"
 #include "device_rtc.h"
+
 #include "water_level.h"
 #include "device_pin_in.h"
 #include "device_pin_out.h"
 #include "application_logic.h"
 #include "push_data.h"
 
-Device_rtc		DEV_RTC("rtc");
-Water_level 	DEV_WLEVEL("water_level", PIN_TRIGGER, PIN_ECHO);
-Device_pin_in 	DEV_WDETECT("water_detect", PIN_WDETECT, 4, true); // water detect switch - when its physically low, its open -> high
-Device_pin_out 	DEV_PUMP("pump", PIN_PUMP, true); // pump inverted, since npn transistor - writing 0 will start the pump
-Device_pin_in 	DEV_SWITCH("switch", PIN_SWITCH, 8, true); // manual switch
-Logic 			LOGIC;
-Push_data		PUSH;
+Device_rtc		DEV_RTC("rtc");	// NOLINT(cert-err58-cpp)
+Water_level 	DEV_WLEVEL("water_level", PIN_TRIGGER, PIN_ECHO);	// NOLINT(cert-err58-cpp)
+Device_pin_in 	DEV_WDETECT("water_detect", PIN_WDETECT, 4, true); // water detect switch - when its physically low, its open -> high	// NOLINT(cert-err58-cpp)
+Device_pin_out 	DEV_PUMP("pump", PIN_PUMP, true); // pump inverted, since npn transistor - writing 0 will start the pump	// NOLINT(cert-err58-cpp)
+Device_pin_in 	DEV_SWITCH("switch", PIN_SWITCH, 8, true); // manual switch	// NOLINT(cert-err58-cpp)
+Logic 			LOGIC;	// NOLINT(cert-err58-cpp)
+Push_data		PUSH;	// NOLINT(cert-err58-cpp)
+
+// GLOBAL VARIABLE
+String relayPrefix = "RELAY";	// NOLINT(cert-err58-cpp)
+String sensorPrefix = "SENSOR";	// NOLINT(cert-err58-cpp)
 
 // DATA FOR THIS DEVICE ONLY
 int sensorPin5 = 5;
@@ -38,29 +44,19 @@ int sensorPin8 = 8;
 bool sensorPin8enabled = false;
 int lastSensorPin8Value = 1;
 
-long previousMillis = 0;
+long previousMillis = 0; 
 unsigned long postInterval = 10000;
 
-int pinConverter(int boardPin)
-{
-	if (boardPin == 0)
-		return 16;
-	if (boardPin == 1)
-		return 5;
-	if (boardPin == 2)
-		return 4;
-	if (boardPin == 3)
-		return 0;
-	if (boardPin == 4)
-		return 2;
-	if (boardPin == 5)
-		return 14;
-	if (boardPin == 6)
-		return 12;
-	if (boardPin == 7)
-		return 13;
-	if (boardPin == 8)
-		return 15;
+int pinConverter(int boardPin) {
+    if (boardPin == 0) return 16;
+    if (boardPin == 1) return 5;
+    if (boardPin == 2) return 4;
+    if (boardPin == 3) return 0;
+    if (boardPin == 4) return 2;
+    if (boardPin == 5) return 14;
+    if (boardPin == 6) return 12;
+    if (boardPin == 7) return 13;
+    if (boardPin == 8) return 15;
 }
 
 void setupPinModes()
@@ -84,7 +80,7 @@ public:
 	Device_uptime()
 		: Device_input("uptime")
 	{};
-	virtual void loop() override
+	void loop() override
 	{ this->value = millis() / 1000; };
 };
 
@@ -94,13 +90,13 @@ public:
 	Device_status()
 		: Device_input("status")
 	{};
-	virtual void loop() override
+	void loop() override
 	{ this->value = (int)LOG.get_status(); };
 };
 
-Device_uptime DEV_UPTIME;
+Device_uptime DEV_UPTIME;	// NOLINT(cert-err58-cpp)
 
-Device_status DEV_STATUS;
+Device_status DEV_STATUS;// NOLINT(cert-err58-cpp)
 
 Device *const DEVICES[] =
 	{&DEV_WLEVEL, &DEV_WDETECT, &DEV_PUMP, &DEV_UPTIME, &DEV_RTC, &DEV_STATUS,
@@ -295,8 +291,7 @@ void handle_serial()
 	int line_len;
 	char *line = serial_receive(&line_len);
 
-	if (line == nullptr)
-		return;
+	if (line == nullptr) return;
 
 	LOG_WARN("Serial: %s ", line);
 
@@ -311,7 +306,7 @@ void handle_serial()
 void setup()
 {
 	// SETUP ESP8266 DEVICE
-	LOG.setup_serial(CONFIG.hostname, 115200);
+	LOG.setup_serial(CONFIG.hostname, 9600);
 	LOG.setup_led(PIN_LED);
 	LOG.setup_fatal_hook(logger_fatal_hook);
 	Platform_ESP8266::setup();
@@ -344,6 +339,7 @@ void loop()
 	webserver_loop();
 	PLATFORM.loop();
 
+//	sendHeartBeatOnInterval();
 	delay(10);
 
 	for (auto loop : DEVICES)
@@ -351,6 +347,9 @@ void loop()
 
 	Config_run_table_time time_now{};
 	DEV_RTC.time_of_day(&time_now);
+
+//	LOG_INFO("The temperature is: %f", RTC_DS3231::getTemperature());
+//	sendHeartBeatOnInterval();
 
 	bool logic_changed = LOGIC.run_logic(&time_now,
 										 &DEV_PUMP,

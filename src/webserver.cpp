@@ -1,6 +1,7 @@
 #include <cstring>
 #include <ESP8266WebServer.h>
 #include <FS.h>
+#include <Arduino.h>
 
 #include "webserver.h"
 #include "logger.h"
@@ -68,7 +69,6 @@ static void handle_log()
 static void handle_status()
 {
 	char *buffer = webserver_get_buffer();
-
 	const char *status;
 
 	if (LOG.get_status() == Logger::Status::RUNNING) {
@@ -78,11 +78,9 @@ static void handle_status()
 		status = "Error";
 	}
 
-
 	InfoUptime uptime{};
 	memset(&uptime, 0x00, sizeof(uptime));
 	get_uptime(&uptime);
-
 
 	snprintf(buffer,
 			 WEBSERVER_MAX_RESPONSE_SIZE,
@@ -104,13 +102,13 @@ void webserver_setup()
 	WEBSERVER.serveStatic("/", SPIFFS, "/index.html", "max-age=86400");
 	WEBSERVER.serveStatic("/data/", SPIFFS, "/", "max-age=86400");
 	WEBSERVER.onNotFound([]()
-						 {
-							 WEBSERVER.send(404, "text/plain", "Page not found");
-						 });
+	{
+	 WEBSERVER.send(404, "text/plain", "Page not found");
+	});
 	WEBSERVER.begin();
 }
 
-void webserver_loop(void)
+void webserver_loop()
 {
 	WEBSERVER.handleClient();
 }

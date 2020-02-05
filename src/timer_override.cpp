@@ -36,8 +36,7 @@ bool TimerOverride::check(unsigned long timeout_ms)
 
 	// has the current time overflown
 	if (current_time < this->reset_ms) { // did the current time overflow
-		if (this->reset_ms
-			< target_time) { // no, it did not -> we are way over.
+		if (this->reset_ms < target_time) { // no, it did not -> we are way over.
 			return true;
 		}
 		else { // yes its overflown as well, normal functionality.
@@ -45,8 +44,7 @@ bool TimerOverride::check(unsigned long timeout_ms)
 		}
 	}
 	else { // timer has not overflown, how about the target?
-		if (this->reset_ms
-			< target_time) { // no overflow, here either. Normal business
+		if (this->reset_ms < target_time) { // no overflow, here either. Normal business
 			return (current_time >= target_time);
 		}
 		else { // the target is overflown, so must we.

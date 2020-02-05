@@ -24,12 +24,12 @@ public:
 
 	Logger();
 
-	void setup_serial(const char *hostname, int baudrate = 115200);
-	void setup_led(int led_pin_);
+	void setup_serial(const char *hostname, int baudrate = 9600);
+	void setup_led(int _led_pin);
 	void setup_fatal_hook(LoggerFatalHook hook);
 
 	Logger::Status get_status();
-	void set_status(Logger::Status status);
+	static void set_status(Logger::Status status);
 
 	void log(Logger::Level level, const __FlashStringHelper *format, ...);
 

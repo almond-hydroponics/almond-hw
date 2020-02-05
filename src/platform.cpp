@@ -74,32 +74,31 @@ void Platform_ESP8266::setup_ota()
 	ArduinoOTA.setPassword(CONFIG.password);
 
 	ArduinoOTA.onStart([]()
-					   {
-						   LOG_WARN("Update start!");
-						   SPIFFS.end();
-					   });
+	{
+	   LOG_WARN("Update start!");
+	   SPIFFS.end();
+	});
 
 	ArduinoOTA.onEnd([]()
-					 {
-						 LOG_WARN("Update done!");
-					 });
+	{
+	 LOG_WARN("Update done!");
+	});
 
 	ArduinoOTA.onProgress([](unsigned int progress, unsigned int total)
-						  {
-							  static unsigned int last = 0xFF;
-							  unsigned int prog = (progress / (total / 100));
+	{
+		static unsigned int last = 0xFF;
+		unsigned int prog = (progress / (total / 100));
 
-							  if (prog == last)
-								  return;
+		if (prog == last) return;
 
-							  last = prog;
-							  LOG_INFO("Progress: %u%%", prog);
-						  });
+		last = prog;
+		LOG_INFO("Progress: %u%%", prog);
+	});
 
 	ArduinoOTA.onError([](ota_error_t error)
-					   {
-						   LOG_FATAL("Error %u during update: ", error);
-					   });
+	{
+		LOG_FATAL("Error %u during update: ", error);
+	});
 	ArduinoOTA.begin();
 }
 
