@@ -33,7 +33,7 @@ public:
 
 	LogicStatus get_status();
 	/// @returns true if measurements updated and both valid
-	bool get_measurements(int *delays);
+	bool get_measurements(int *delays) const;
 
 protected:
 	void measure_reset();

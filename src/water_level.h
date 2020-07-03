@@ -16,8 +16,8 @@ public:
 	Water_level(const char *name, uint8_t pin_trigger, uint8_t pin_echo);
 	void loop() override;
 	void setup() override;
-protected:
 
+protected:
 	void measure_pulse_in();
 
 	TimerOverride timer;

@@ -35,7 +35,7 @@ void Platform_ESP8266::setup_wifi()
 	LOG_INFO("Wifi starting up... ");
 }
 
-bool Platform_ESP8266::connected()
+bool Platform_ESP8266::connected() const
 {
 	return wifi_ok;
 }

@@ -8,7 +8,7 @@ public:
 	static void setup();
 	void loop();
 
-	bool connected();    // returns true if wlan has been acquired.
+	bool connected() const;    // returns true if wlan has been acquired.
 	static unsigned int get_free_heap();
 
 protected:
