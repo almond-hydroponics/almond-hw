@@ -106,7 +106,7 @@ void Logger::log(Logger::Level level,
 	}
 
 	if (level == Logger::Level::FATAL)
-		this->set_status(Logger::Status::ERROR);
+		Logger::set_status(Logger::Status::ERROR);
 
 	if (level == Logger::Level::FATAL || level == Logger::Level::ERROR) {
 		if (this->fatal_hook != nullptr)

@@ -5,13 +5,13 @@ const Config CONFIG = {
 	.email = {
 		.server_host = "smtp.gmail.com",
 		.server_port = 465,
-		.login = "almond@gmail.com",
+		.login = "almond.froyo@gmail.com",
 		.password = "almond",
-		.receiver = "froyo@gmail.com",
+		.receiver = "francismasha96@gmail.com",
 	},
 	.wlan = {
-		.ssid = "zukuhome",
-		.password = "njoki001",
+		.ssid = "Masha",
+		.password = "20021988",
 	},
 	.runtable = {    // Run the pump for 1min every 15min from 7:00 to 20:00
 		.active_start = {.hour = 7, .minute = 0, .second = 0},
@@ -33,7 +33,7 @@ const Config CONFIG = {
 		.mqtt_user = "almond",
 		.mqtt_password = "froyogreen"
 	},
-	.hostname = "almond",
+	.hostname = "almond.com",
 	.password = "froyo",
 	.timezone_h = 3,
 };

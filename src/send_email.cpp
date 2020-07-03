@@ -35,7 +35,7 @@ bool read_response(WiFiClientSecure *client, char *buffer, int buffer_len,
 		buffer[buffer_offset + red] = 0;
 		int search_start = max(0, buffer_offset - endmarker_len);
 
-		if (strstr(buffer + search_start, endmarker) != NULL) {
+		if (strstr(buffer + search_start, endmarker) != nullptr) {
 			line_change_found = true;
 		}
 		buffer_offset += red;

@@ -22,7 +22,7 @@ public:
 
 protected:
 	TimerOverride timer;
-	bool thingspeak_push_raw(const int *values,
+	static bool thingspeak_push_raw(const int *values,
 							 int index_start,
 							 int values_n,
 							 char *buffer);

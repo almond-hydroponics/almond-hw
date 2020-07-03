@@ -290,3 +290,6 @@ _deps
 
 # End of https://www.gitignore.io/api/c,c++,clion,macos,clion+all,platformio,visualstudiocode
 /.vscode/
+
+build/*
+/lib/

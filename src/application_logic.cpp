@@ -23,7 +23,7 @@ LogicStatus Logic::get_status()
 	return status;
 }
 
-bool Logic::get_measurements(int *delays)
+bool Logic::get_measurements(int *delays) const
 {
 	LOG_INFO("PLogic meas %u %u", measure_delay_p0_d0, measure_delay_p1_d1);
 

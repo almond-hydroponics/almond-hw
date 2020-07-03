@@ -28,6 +28,8 @@ void Device_rtc::setup()
 	}
 	rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
 	LOG_INFO("RTC is running!");
+	DateTime now(value);
+	LOG_INFO("Set time: %d:%d", now.hour(), now.minute());
 }
 
 void Device_rtc::time_of_day(Config_run_table_time *time)

@@ -88,5 +88,6 @@ extern const Config CONFIG;
 #define PIN_TRIGGER 2	// board pin 4
 #define PIN_ECHO    5	// board pin 1
 #define PIN_WDETECT 13	// board pin 7
+#define WIFI_LED	3	// board pin 3
 
 #endif //ALMOND_HW_CONFIG_H
